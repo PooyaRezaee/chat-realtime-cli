@@ -6,14 +6,13 @@ import os
 
 
 init()
-PORT = 8001
-HOST = "127.0.0.1"
 
 messages = []
 for_user = None
+RUNNING = True
 
 
-def print_page(msg,clear_input=False):
+def print_page(msg, clear_input=False):
     os.system("clear")
     messages.append(msg)
     text = ""
@@ -44,29 +43,41 @@ def generate_data_message(message, **kwargs):
 
 
 def reiving_data(s: socket.socket):
-    while True:
-        data = s.recv(1024)
-        print_page(data.decode())
+    while RUNNING:
+        try:
+            data = s.recv(1024)
+            print_page(data.decode())
+        except (KeyboardInterrupt, OSError):
+            pass
 
 
-def main(name):
+def main(name, addr):
     global for_user
+    global RUNNING
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((HOST, PORT))
+        s.connect(addr)
         s.send(f"Join@{name}".encode())
 
         thread = Thread(target=reiving_data, args=[s])
         thread.start()
 
-        while True:
-            for_user = input(Fore.LIGHTCYAN_EX + "for > ")
-            message = input(Fore.LIGHTCYAN_EX + "Message > ")
-            s.send(generate_data_message(message, for_user=for_user))
-            for_user = None
-            print_page('',clear_input=True)
-            time.sleep(0.1)
+        while RUNNING:
+            try:
+                for_user = input(Fore.LIGHTCYAN_EX + "for > ")
+                message = input(Fore.LIGHTCYAN_EX + "Message > ")
+                if for_user == "exit" and message == "exit":
+                    raise KeyboardInterrupt
+                s.send(generate_data_message(message, for_user=for_user))
+                for_user = None
+                print_page("", clear_input=True)
+                time.sleep(0.1)
+            except (KeyboardInterrupt, OSError):
+                s.send(generate_data_message("$exit", for_user="server"))
+                RUNNING = False
 
 
 if __name__ == "__main__":
-    main(input(Fore.MAGENTA + "Enter Your Name: "))
+    HOST = input(Fore.MAGENTA + "Enter IP v4 Server : ")
+    PORT = int(input("Enter Port Server : "))
+    main(input("Enter Your Name: "), (HOST, PORT))

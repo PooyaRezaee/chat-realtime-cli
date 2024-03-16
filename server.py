@@ -7,7 +7,6 @@ init()
 
 users = {}  # Dictionary user and object connection
 users_pool = ThreadPoolExecutor(max_workers=10)
-PORT = 8001
 
 
 def read_data(data: bytes) -> (dict, str):
@@ -76,6 +75,7 @@ def connection_users_control(s: socket.socket):
 
 
 def main():
+    PORT = int(input(Fore.MAGENTA + "Enter Port Server : "))
     print(Fore.YELLOW + "Initilizing ...")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         addr = "", PORT
